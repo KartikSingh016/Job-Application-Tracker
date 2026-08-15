@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 export async function connectDB() {
+  if (mongoose.connection.readyState !== 0) return; // already connected/connecting — reuse it (serverless keeps the module warm between requests)
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI is not set (check your .env file)");
   await mongoose.connect(uri);
