@@ -63,6 +63,24 @@ API over `fetch`; there are no server-rendered routes.
 
 Both files are gitignored and should not be committed.
 
+## Deployment
+
+The client and server deploy separately — Vercel only runs the static client,
+the Express server needs a host that runs a persistent Node process.
+
+**Server (Render)**
+- New Web Service → connect this repo → Root Directory `server`
+- Build command `npm install`, start command `npm start`
+- Add env var `MONGODB_URI`
+- In MongoDB Atlas, whitelist `0.0.0.0/0` under Network Access (Render's free
+  tier has no static IP)
+
+**Client (Vercel)**
+- Import this repo → set Root Directory to `client`
+- Add env var `VITE_API_URL` = `https://<your-render-url>/api`
+- `client/vercel.json` handles the SPA rewrite so React Router routes don't
+  404 on refresh
+
 ## API
 
 | Method | Endpoint | Description |
