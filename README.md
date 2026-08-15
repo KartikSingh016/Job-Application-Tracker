@@ -65,21 +65,27 @@ Both files are gitignored and should not be committed.
 
 ## Deployment
 
-The client and server deploy separately — Vercel only runs the static client,
-the Express server needs a host that runs a persistent Node process.
+Client and server are deployed as two separate Vercel projects from the same
+repo, each pointed at a different Root Directory.
 
-**Server (Render)**
-- New Web Service → connect this repo → Root Directory `server`
-- Build command `npm install`, start command `npm start`
+**Server**
+- Import this repo as its own project → Root Directory `server`
 - Add env var `MONGODB_URI`
-- In MongoDB Atlas, whitelist `0.0.0.0/0` under Network Access (Render's free
-  tier has no static IP)
+- `server/api/index.js` wraps the Express app as a serverless function
+  (`app.listen` only runs locally, via `server/server.js`); `server/vercel.json`
+  routes every request to it. `config/db.js` reuses the Mongo connection
+  across warm invocations instead of reconnecting per request.
+- In MongoDB Atlas, whitelist `0.0.0.0/0` under Network Access — Vercel's
+  serverless functions don't have a fixed IP.
 
-**Client (Vercel)**
-- Import this repo → set Root Directory to `client`
-- Add env var `VITE_API_URL` = `https://<your-render-url>/api`
+**Client**
+- Import this repo as a second project → Root Directory `client`
+- Add env var `VITE_API_URL` = `https://<your-server-project>.vercel.app/api`
 - `client/vercel.json` handles the SPA rewrite so React Router routes don't
   404 on refresh
+
+`VITE_API_URL` is baked in at build time, not read at runtime — if you add or
+change it, you have to trigger a new deploy for it to take effect.
 
 ## API
 
