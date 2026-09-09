@@ -1,15 +1,29 @@
 import { Router } from "express";
 import Application, { STATUS_VALUES } from "../models/Application.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
+
+// Everything below is per-user data. requireAuth sets req.userId, and every
+// query below filters on it — a missing filter would leak another user's rows.
+router.use(requireAuth);
+
+// userId is derived from the verified token, never from the request body,
+// so a client can't reassign a record to (or read) someone else's account
+function ownFields(body) {
+  const { userId, _id, ...rest } = body || {};
+  return rest;
+}
 
 // GET /api/applications/stats — dashboard summary counts (before /:id so "stats" isn't read as an id)
 router.get("/stats", async (req, res, next) => {
   try {
-    const total = await Application.countDocuments();
+    const owner = { userId: req.userId };
+    const total = await Application.countDocuments(owner);
 
     const statusCounts = Object.fromEntries(STATUS_VALUES.map((s) => [s, 0]));
     const grouped = await Application.aggregate([
+      { $match: owner },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
     grouped.forEach(({ _id, count }) => {
@@ -19,6 +33,7 @@ router.get("/stats", async (req, res, next) => {
     const now = new Date();
     const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const upcomingInterviews = await Application.find({
+      ...owner,
       interviewDate: { $gte: now, $lte: in7Days },
     })
       .sort({ interviewDate: 1 })
@@ -34,10 +49,11 @@ router.get("/stats", async (req, res, next) => {
 router.get("/", async (req, res, next) => {
   try {
     const { search, status } = req.query;
-    const query = {};
+    const query = { userId: req.userId };
     if (status) query.status = status;
     if (search) {
-      const re = new RegExp(search, "i");
+      // escape regex metacharacters so a search for "c++" isn't a syntax error
+      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       query.$or = [{ company: re }, { position: re }];
     }
     const applications = await Application.find(query).sort({ dateApplied: -1 });
@@ -50,7 +66,7 @@ router.get("/", async (req, res, next) => {
 // GET /api/applications/:id
 router.get("/:id", async (req, res, next) => {
   try {
-    const application = await Application.findById(req.params.id);
+    const application = await Application.findOne({ _id: req.params.id, userId: req.userId });
     if (!application) return res.status(404).json({ error: "Application not found" });
     res.json(application);
   } catch (err) {
@@ -61,7 +77,7 @@ router.get("/:id", async (req, res, next) => {
 // POST /api/applications
 router.post("/", async (req, res, next) => {
   try {
-    const application = await Application.create(req.body);
+    const application = await Application.create({ ...ownFields(req.body), userId: req.userId });
     res.status(201).json(application);
   } catch (err) {
     next(err);
@@ -71,10 +87,11 @@ router.post("/", async (req, res, next) => {
 // PUT /api/applications/:id — full or partial update (also used for quick inline status changes)
 router.put("/:id", async (req, res, next) => {
   try {
-    const application = await Application.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const application = await Application.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId },
+      ownFields(req.body),
+      { new: true, runValidators: true }
+    );
     if (!application) return res.status(404).json({ error: "Application not found" });
     res.json(application);
   } catch (err) {
@@ -85,7 +102,10 @@ router.put("/:id", async (req, res, next) => {
 // DELETE /api/applications/:id
 router.delete("/:id", async (req, res, next) => {
   try {
-    const application = await Application.findByIdAndDelete(req.params.id);
+    const application = await Application.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.userId,
+    });
     if (!application) return res.status(404).json({ error: "Application not found" });
     res.json({ message: "Application deleted" });
   } catch (err) {

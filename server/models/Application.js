@@ -4,6 +4,13 @@ const STATUSES = ["Applied", "Interviewing", "Offer", "Rejected", "Withdrawn"];
 
 const applicationSchema = new mongoose.Schema(
   {
+    // every application belongs to exactly one user; all queries filter on this
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     company: { type: String, required: true, trim: true },
     position: { type: String, required: true, trim: true },
     status: { type: String, enum: STATUSES, default: "Applied" },
@@ -15,6 +22,9 @@ const applicationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// the dashboard's default view: one user's applications, newest first
+applicationSchema.index({ userId: 1, dateApplied: -1 });
 
 export const STATUS_VALUES = STATUSES;
 export default mongoose.model("Application", applicationSchema);

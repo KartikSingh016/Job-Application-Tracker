@@ -64,12 +64,19 @@ a {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
 }
 
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
 .navbar .brand {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  max-width: 960px;
-  margin: 0 auto;
   color: #fff;
 }
 
@@ -653,6 +660,133 @@ textarea:focus {
   line-height: 1.6;
 }
 
+/* ---------- signed-in user menu ---------- */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #334155;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--amber-light);
+}
+
+.user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--slate-300);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-ghost {
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.15);
+  color: var(--slate-300);
+}
+
+.btn-ghost:hover {
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+}
+
+/* ---------- login screen ---------- */
+.boot-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--slate-500);
+  font-size: 0.875rem;
+}
+
+.login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+  /* same navy as the app header, so signing in doesn't feel like a different site */
+  background: radial-gradient(circle at 50% 0%, #1e293b, var(--navy) 60%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0;
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-mark {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--slate-900);
+}
+
+.login-card p {
+  margin: 0.625rem 0 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--slate-500);
+}
+
+.login-card .error {
+  width: 100%;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.login-card code {
+  font-size: 0.8125rem;
+  background: rgb(15 23 42 / 0.06);
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.3rem;
+}
+
+/* Google renders its button in an iframe we can't restyle — just centre it */
+.google-button {
+  display: flex;
+  justify-content: center;
+  min-height: 2.5rem;
+}
+
+.login-fineprint {
+  margin: 1.5rem 0 0 !important;
+  font-size: 0.75rem !important;
+  color: var(--slate-400) !important;
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 768px) {
   .stats-grid {
@@ -686,5 +820,14 @@ textarea:focus {
 
   .page-header {
     align-items: flex-start;
+  }
+
+  /* the avatar alone identifies the account once space is tight */
+  .user-name {
+    display: none;
+  }
+
+  .brand-name {
+    font-size: 0.875rem;
   }
 }
