@@ -1,8 +1,34 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
-import { STATUSES } from "../constants.js";
+import { STATUSES, STAT_ICONS } from "../constants.js";
 import StatusBadge from "../components/StatusBadge.jsx";
+import EmptyState from "../components/EmptyState.jsx";
+
+// small helper so the stat card picks up its colour modifier from index.css
+function StatCard({ label, value }) {
+  return (
+    <div className={`stat-card stat-${label.toLowerCase()}`}>
+      <span className="stat-icon">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d={STAT_ICONS[label]} />
+        </svg>
+      </span>
+      <span className="stat-value">{value}</span>
+      <span className="stat-label">{label}</span>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [applications, setApplications] = useState([]);
@@ -46,7 +72,10 @@ export default function Dashboard() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>Dashboard</h1>
+        <div>
+          <h1>Dashboard</h1>
+          <p className="page-subtitle">Stay on top of every opportunity</p>
+        </div>
         <Link to="/new" className="btn btn-primary">
           + Add Application
         </Link>
@@ -56,15 +85,9 @@ export default function Dashboard() {
 
       {stats && (
         <div className="stats-grid">
-          <div className="stat-card">
-            <span className="stat-value">{stats.total}</span>
-            <span className="stat-label">Total</span>
-          </div>
+          <StatCard label="Total" value={stats.total} />
           {STATUSES.map((s) => (
-            <div className="stat-card" key={s}>
-              <span className="stat-value">{stats.statusCounts[s] || 0}</span>
-              <span className="stat-label">{s}</span>
-            </div>
+            <StatCard key={s} label={s} value={stats.statusCounts[s] || 0} />
           ))}
         </div>
       )}
@@ -86,26 +109,56 @@ export default function Dashboard() {
       )}
 
       <div className="filters">
-        <input
-          type="text"
-          placeholder="Search by company or position..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">All statuses</option>
+        <div className="search-field">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search company or position..."
+            aria-label="Search applications"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="status-pills" role="group" aria-label="Filter by status">
+          <button
+            type="button"
+            className="pill"
+            aria-pressed={status === ""}
+            onClick={() => setStatus("")}
+          >
+            All Statuses
+          </button>
           {STATUSES.map((s) => (
-            <option key={s} value={s}>
+            <button
+              key={s}
+              type="button"
+              className="pill"
+              aria-pressed={status === s}
+              onClick={() => setStatus(s)}
+            >
               {s}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
       {loading ? (
         <p>Loading...</p>
       ) : applications.length === 0 ? (
-        <p className="empty">No applications yet. Add your first one!</p>
+        <EmptyState />
       ) : (
         <div className="card-list">
           {applications.map((app) => (
@@ -143,6 +196,31 @@ export default function Dashboard() {
           ))}
         </div>
       )}
+
+      <section className="card tip-card">
+        <span className="tip-icon">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 18h6m-5 3h4M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z" />
+          </svg>
+        </span>
+        <div>
+          <h4>Pro Tip for Seekers</h4>
+          <p>
+            Tailor each submission with keywords from the job spec. Following up within 5 business
+            days boosts response rates.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
