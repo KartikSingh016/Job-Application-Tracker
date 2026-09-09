@@ -71,6 +71,15 @@ async function main() {
   // regex metacharacters in the search term must not blow up
   assert.equal((await call("/applications?search=c%2B%2B", { token: alice })).status, 200);
 
+  // query params sent as objects (?search[$gt]= / ?status[$ne]=) must not crash
+  // or inject a Mongo operator — they are coerced to strings and ignored
+  assert.equal((await call("/applications?search[$gt]=", { token: alice })).status, 200);
+  assert.equal((await call("/applications?status[$ne]=zzz", { token: alice })).status, 200);
+
+  // a malformed id is a clean 404, never a 400 that leaks the Mongoose model
+  const malformed = await call("/applications/not-a-valid-id", { token: alice });
+  assert.equal(malformed.status, 404, "malformed id should 404");
+
   // --- isolation: bob must not see or touch alice's record ---
   const bobList = await (await call("/applications", { token: bob })).json();
   assert.ok(!bobList.some((a) => a._id === id), "another user's list must not include it");

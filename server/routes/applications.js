@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import Application, { STATUS_VALUES } from "../models/Application.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -7,6 +8,16 @@ const router = Router();
 // Everything below is per-user data. requireAuth sets req.userId, and every
 // query below filters on it — a missing filter would leak another user's rows.
 router.use(requireAuth);
+
+// A malformed :id would otherwise reach Mongoose and surface as a CastError
+// that 400s and echoes the internal model name. Reject it here as a clean 404,
+// once, for all three /:id routes.
+router.param("id", (req, res, next, id) => {
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(404).json({ error: "Application not found" });
+  }
+  next();
+});
 
 // userId is derived from the verified token, never from the request body,
 // so a client can't reassign a record to (or read) someone else's account
@@ -48,12 +59,17 @@ router.get("/stats", async (req, res, next) => {
 // GET /api/applications?search=&status= — list, with optional search/filter
 router.get("/", async (req, res, next) => {
   try {
-    const { search, status } = req.query;
+    // Express parses ?status[$ne]=x into an object, which would inject a Mongo
+    // operator into the query (and crash .replace below). Accept only strings.
+    const search = typeof req.query.search === "string" ? req.query.search : "";
+    const status = typeof req.query.status === "string" ? req.query.status : "";
     const query = { userId: req.userId };
     if (status) query.status = status;
     if (search) {
-      // escape regex metacharacters so a search for "c++" isn't a syntax error
-      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      // escape regex metacharacters so a search for "c++" isn't a syntax error,
+      // and cap length so a huge pattern can't tie up the regex engine
+      const escaped = search.slice(0, 200).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(escaped, "i");
       query.$or = [{ company: re }, { position: re }];
     }
     const applications = await Application.find(query).sort({ dateApplied: -1 });

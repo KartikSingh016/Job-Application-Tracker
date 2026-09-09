@@ -3,6 +3,17 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 
+// Only surface http(s) links. React does not sanitize href, so a stored
+// "javascript:..." value would run as script when the link is clicked.
+function safeHttpUrl(value) {
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function ApplicationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -54,9 +65,13 @@ export default function ApplicationDetail() {
             <>
               <dt>Job Posting</dt>
               <dd>
-                <a href={app.jobUrl} target="_blank" rel="noreferrer">
-                  {app.jobUrl}
-                </a>
+                {safeHttpUrl(app.jobUrl) ? (
+                  <a href={safeHttpUrl(app.jobUrl)} target="_blank" rel="noreferrer">
+                    {app.jobUrl}
+                  </a>
+                ) : (
+                  app.jobUrl
+                )}
               </dd>
             </>
           )}
