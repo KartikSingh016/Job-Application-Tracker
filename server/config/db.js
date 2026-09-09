@@ -20,8 +20,12 @@ export async function connectDB() {
     // against a connection that isn't up yet — surface the error. 12s leaves
     // room for a cold serverless start's DNS + TLS handshake to the replica set.
     mongoose.set("bufferCommands", false);
+    // family: 4 forces IPv4. Vercel functions can egress over IPv6, which the
+    // Atlas allowlist's 0.0.0.0/0 (IPv4-only) does not cover, so Atlas rejects
+    // the TLS handshake with "tlsv1 alert internal error". Pinning to IPv4
+    // keeps the connection within the allowlisted range.
     cached.promise = mongoose
-      .connect(uri, { serverSelectionTimeoutMS: 12000 })
+      .connect(uri, { serverSelectionTimeoutMS: 12000, family: 4 })
       .then((m) => m.connection);
   }
 
