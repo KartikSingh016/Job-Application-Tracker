@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import applicationsRouter from "./routes/applications.js";
 import authRouter from "./routes/auth.js";
+import { connectDB } from "./config/db.js";
 
 const app = express();
 
@@ -10,6 +11,20 @@ const app = express();
 const allowedOrigins = process.env.CLIENT_ORIGIN?.split(",").map((o) => o.trim());
 app.use(cors({ origin: allowedOrigins?.length ? allowedOrigins : true }));
 app.use(express.json());
+
+// Connect lazily, AFTER cors has already answered preflight OPTIONS — those
+// need no database, and gating them behind the connection is what let a slow
+// Mongo connection break CORS itself. On failure this reaches the error
+// handler below, which still carries the cors headers, so the browser sees a
+// real 500 instead of a blocked request ("Can't reach the API").
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.use("/api/auth", authRouter);
 app.use("/api/applications", applicationsRouter);
