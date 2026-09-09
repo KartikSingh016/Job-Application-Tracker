@@ -33,16 +33,6 @@ export async function connectDB() {
     cached.conn = await cached.promise;
   } catch (err) {
     cached.promise = null; // let the next request try again rather than caching a dead promise
-    // ponytail: temporary diagnostic — surface the per-node socket error that
-    // util.inspect otherwise collapses, so we can see timeout vs refused vs TLS.
-    try {
-      const servers = err?.reason?.servers;
-      if (servers) {
-        for (const [host, desc] of servers) {
-          console.error(`DBDIAG node ${host}: type=${desc.type} error=${desc.error?.message || "none"}`);
-        }
-      }
-    } catch {}
     throw err;
   }
   return cached.conn;
