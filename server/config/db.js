@@ -16,11 +16,12 @@ export async function connectDB() {
     const uri = process.env.MONGODB_URI;
     if (!uri) throw new Error("MONGODB_URI is not set (check your .env file)");
 
-    // Fail fast (8s) instead of hanging to the 30s function limit, and don't
-    // buffer queries against a connection that isn't up yet — surface the error.
+    // Fail in a bounded time instead of hanging, and don't buffer queries
+    // against a connection that isn't up yet — surface the error. 12s leaves
+    // room for a cold serverless start's DNS + TLS handshake to the replica set.
     mongoose.set("bufferCommands", false);
     cached.promise = mongoose
-      .connect(uri, { serverSelectionTimeoutMS: 8000 })
+      .connect(uri, { serverSelectionTimeoutMS: 12000 })
       .then((m) => m.connection);
   }
 
